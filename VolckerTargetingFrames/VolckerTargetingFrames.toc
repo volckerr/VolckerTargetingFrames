@@ -1,0 +1,18 @@
+## Interface: 30300
+## Title: VolckerTargetingFrames
+## Notes: VolckerTargetingFrames
+## Author: Ironi
+## Backport: Cheeta
+## Version: 0.1
+## DefaultState: enabled
+## SavedVariables: VTFConfig
+
+embeds.xml
+locales.xml
+auraBlacklist.lua
+rangeSpells.lua
+priorityNPCs.lua
+layouts.lua
+customConditionalTemplates.lua
+options.lua
+VolckerTargetingFrames.lua
