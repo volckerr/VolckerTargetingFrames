@@ -31,13 +31,13 @@ local layouts = {}
 function layouts:Default() 
 	local layout = {
 		['anchor'] = {
-			['x'] = 595, --Horizontal position from UIParent, BOTTOMLEFT
-			['y'] = 876, --Vertical position from UIParent, BOTTOMLEFT
+			['x'] = 772, --Horizontal position from UIParent, BOTTOMLEFT
+			['y'] = 866, --Vertical position from UIParent, BOTTOMLEFT
 		},
 		['maxUnits'] = 24, -- Maximum amount of unitframes to show
 		['onlyEnemies'] = true, -- Only show enemy units
 		['onlyShowInCombat'] = false, -- Only show units while you are in combat
-		['grow'] = 'TOPLEFT', --Anchor for grow direction
+		['grow'] = 'TOPRIGHT', --Anchor for grow direction
 		['invertGrow'] = true,
 		['frame'] = {
 			['width'] = 140, --Unit frame width

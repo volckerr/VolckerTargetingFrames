@@ -239,6 +239,19 @@ function iTF:RefreshAllUnitEngagement(force)
 		end
 	end
 end
+function iTF:GetTrackedUnitForTarget(targetUnit)
+	if not targetUnit or not UnitExists(targetUnit) or not iTF.frames then
+		return nil
+	end
+
+	for unitID, frame in pairs(iTF.frames) do
+		if frame and frame.isShown and UnitExists(unitID) and UnitIsUnit(unitID, targetUnit) then
+			return unitID
+		end
+	end
+
+	return nil
+end
 function iTF:IsLayoutEligible(unitID)
 	local frame = iTF.frames and iTF.frames[unitID]
 	return frame and UnitExists(unitID) and frame.isShown and not frame.suppressed
@@ -608,15 +621,9 @@ local function updateIndicator(unitID, cond, customCondIndicators, showCustom)
 		if conditionals.targetChanged.currentTarget then
 			local show = false
 			if UnitExists('target') then
-				local nameplate = C_NamePlate.GetNamePlateForUnit('target')
-				if nameplate and nameplate.UnitFrame then
-					if nameplate.UnitFrame.plateID then
-						unitID = 'nameplate' .. nameplate.UnitFrame.plateID-1
-					elseif nameplate.UnitFrame.unit then
-						unitID = nameplate.UnitFrame.unit
-					end
+				unitID = iTF:GetTrackedUnitForTarget('target')
+				if unitID then
 					show = true
-					--nameplate = nil
 				end
 			end
 			for k in pairs(conditionals.targetChanged.currentTarget.indicators) do
@@ -2504,18 +2511,10 @@ function addon:UNIT_THREAT_LIST_UPDATE(unitID)
 	end
 end
 function addon:PLAYER_TARGET_CHANGED()
-	if C_NamePlate and UnitExists('target') then
-		local targetPlate = C_NamePlate.GetNamePlateForUnit('target')
-		if targetPlate and targetPlate.UnitFrame then
-			local unitID
-			if targetPlate.UnitFrame.plateID then
-				unitID = 'nameplate' .. targetPlate.UnitFrame.plateID-1
-			else
-				unitID = targetPlate.UnitFrame.unit
-			end
-			if unitID and iTF.frames[unitID] then
-				iTF:RefreshUnitEngagement(unitID)
-			end
+	if UnitExists('target') then
+		local unitID = iTF:GetTrackedUnitForTarget('target')
+		if unitID and iTF.frames[unitID] then
+			iTF:RefreshUnitEngagement(unitID)
 		end
 	end
 	updateIndicator(nil, 'currentTarget')
