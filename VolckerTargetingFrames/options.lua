@@ -79,6 +79,13 @@ function iTF:LoadDefaults(force)
 	end
 	VTFConfig.priorityNPCs = npcTemp
 
+	VTFConfig.layout.conditionals.currentTarget.enable = true
+	VTFConfig.layout.conditionals.currentTarget.indicators = {['border'] = true}
+	VTFConfig.layout.conditionals.currentTarget.color = {1,1,0,1}
+	VTFConfig.layout.conditionals.aggro.enable = false
+	VTFConfig.layout.conditionals.losingAggro.enable = false
+	VTFConfig.layout.conditionals.gainingAggro.enable = false
+
 end
 local function loadProfile(profile)
 	if profile == 'default' then

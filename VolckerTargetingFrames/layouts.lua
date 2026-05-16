@@ -135,7 +135,7 @@ function layouts:Default()
 			},
 			['currentTarget'] = { --Is current target
 				['enable'] = true,
-				['color'] = {1,1,1,1},
+				['color'] = {1,1,0,1},
 				['indicators'] = {['border'] = true},
 				['weight'] = 100, --Imporantace, higher weight overrides lower
 				['update'] = 'targetChanged', --update func
@@ -169,7 +169,7 @@ function layouts:Default()
 			['aggro'] = {
 				['indicators'] = {['glowRight'] = true,['glowLeft'] = true, ['glowTop'] = true, ['glowBottom'] = true, ['border'] = true},
 				['color'] = {1,0,0,1},
-				['enable'] = true,
+				['enable'] = false,
 				['weight'] = 99, --Imporantace, higher weight overrides lower
 				['roles'] = 3, -- Roles to show, 1 = all, 2 = tank only, 3 = non tanks
 				['update'] = 'threat', --update func
@@ -177,7 +177,7 @@ function layouts:Default()
 			['losingAggro'] = {
 				['indicators'] = {['glowRight'] = true,['glowLeft'] = true, ['glowTop'] = true, ['glowBottom'] = true, ['border'] = true},
 				['color'] = {1,0.5,0,1},
-				['enable'] = true,
+				['enable'] = false,
 				['weight'] = 99, --Imporantace, higher weight overrides lower
 				['roles'] = 2, -- Roles to show, 1 = all, 2 = tank only, 3 = non tanks
 				['update'] = 'threat', --update func
@@ -185,7 +185,7 @@ function layouts:Default()
 			['gainingAggro'] = {
 				['indicators'] = {['glowRight'] = true,['glowLeft'] = true, ['glowTop'] = true, ['glowBottom'] = true, ['border'] = true},
 				['color'] = {1,0.5,0,1},
-				['enable'] = true,
+				['enable'] = false,
 				['weight'] = 99, --Imporantace, higher weight overrides lower
 				['roles'] = 1, -- Roles to show, 1 = all, 2 = tank only, 3 = non tanks
 				['update'] = 'threat', --update func
