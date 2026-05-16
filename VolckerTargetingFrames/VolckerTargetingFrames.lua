@@ -35,7 +35,7 @@ local durationShowDecimals = 5
 local suppressedAlpha = 0
 local groupUnits = {}
 local groupGUIDs = {}
-local nextVisibleOrder = 0
+local nextEngagementOrder = 0
 iTF.indicatorUpdateFuncs = {
 	['interruptRange'] = 'onUpdate',
 	['currentTarget'] = 'targetChanged',
@@ -187,12 +187,7 @@ function iTF:ApplySuppressedDisplay(unitID, suppressed, force)
 		for i = 1, #frame.auras do
 			frame.auras[i]:Hide()
 		end
-		frame.layoutIndex = nil
 	else
-		if not frame.visibleOrder then
-			nextVisibleOrder = nextVisibleOrder + 1
-			frame.visibleOrder = nextVisibleOrder
-		end
 		frame:SetAlpha(1)
 		frame.healthBar:Show()
 		frame.text:Show()
@@ -219,9 +214,18 @@ function iTF:RefreshUnitEngagement(unitID, force)
 		return
 	end
 
+	local wasEngaged = frame.engagedWithGroup
 	local engaged = iTF:IsUnitEngagedWithGroup(unitID)
+	if engaged and (force and not frame.engagementOrder or not wasEngaged) then
+		nextEngagementOrder = nextEngagementOrder + 1
+		frame.engagementOrder = nextEngagementOrder
+	end
 	if force or frame.engagedWithGroup ~= engaged then
 		frame.engagedWithGroup = engaged
+		if not engaged then
+			frame.layoutIndex = nil
+			frame.engagementOrder = nil
+		end
 		iTF:ApplySuppressedDisplay(unitID, not engaged, force)
 	end
 end
@@ -235,14 +239,23 @@ function iTF:RefreshAllUnitEngagement(force)
 		end
 	end
 end
-function iTF:CollectLayoutUnits()
-	local units = {}
-	if not iTF.frames then
-		return units
+function iTF:IsLayoutEligible(unitID)
+	local frame = iTF.frames and iTF.frames[unitID]
+	return frame and UnitExists(unitID) and frame.isShown and not frame.suppressed
+end
+function iTF:PositionFrameAtLayoutIndex(frame, index)
+	if not frame or not index then
+		return
 	end
 
-	for unitID, frame in pairs(iTF.frames) do
-		if UnitExists(unitID) and frame.isShown and not frame.suppressed then
+	local posX, posY = iTF:getUFPos(index)
+	frame:ClearAllPoints()
+	frame:SetPoint(VTFConfig.layout.grow, iTF.mainFrame, VTFConfig.layout.grow, posX, posY)
+end
+function iTF:CollectEngagedLayoutUnits()
+	local units = {}
+	for unitID, frame in pairs(iTF.frames or {}) do
+		if iTF:IsLayoutEligible(unitID) then
 			units[#units + 1] = unitID
 		end
 	end
@@ -250,8 +263,8 @@ function iTF:CollectLayoutUnits()
 	table.sort(units, function(a, b)
 		local frameA = iTF.frames[a]
 		local frameB = iTF.frames[b]
-		local orderA = frameA and frameA.visibleOrder or math.huge
-		local orderB = frameB and frameB.visibleOrder or math.huge
+		local orderA = frameA and frameA.engagementOrder or math.huge
+		local orderB = frameB and frameB.engagementOrder or math.huge
 		if orderA == orderB then
 			return (frameA and frameA.nameplateID or 99) < (frameB and frameB.nameplateID or 99)
 		end
@@ -260,18 +273,52 @@ function iTF:CollectLayoutUnits()
 
 	return units
 end
+function iTF:FindFirstFreeLayoutSlot(excludeUnitID)
+	local used = {}
+	for unitID, frame in pairs(iTF.frames or {}) do
+		if unitID ~= excludeUnitID and frame.layoutIndex and iTF:IsLayoutEligible(unitID) then
+			used[frame.layoutIndex] = true
+		end
+	end
+
+	for index = 1, VTFConfig.layout.maxUnits do
+		if not used[index] then
+			return index
+		end
+	end
+end
+function iTF:AssignStableLayoutSlot(unitID)
+	local frame = iTF.frames and iTF.frames[unitID]
+	if not frame then
+		return
+	end
+
+	if frame.layoutIndex and frame.layoutIndex <= VTFConfig.layout.maxUnits then
+		iTF:PositionFrameAtLayoutIndex(frame, frame.layoutIndex)
+		return frame.layoutIndex
+	end
+
+	local slot = iTF:FindFirstFreeLayoutSlot(unitID)
+	frame.layoutIndex = slot
+	if slot then
+		iTF:PositionFrameAtLayoutIndex(frame, slot)
+	end
+	return slot
+end
 function iTF:ApplyPredictableLayout()
 	if not iTF.frames or InCombatLockdown() then
 		return
 	end
 
-	local orderedUnits = iTF:CollectLayoutUnits()
-	for index, unitID in ipairs(orderedUnits) do
-		local frame = iTF.frames[unitID]
-		local posX, posY = iTF:getUFPos(index)
-		frame:ClearAllPoints()
-		frame:SetPoint(VTFConfig.layout.grow, iTF.mainFrame, VTFConfig.layout.grow, posX, posY)
-		frame.layoutIndex = index
+	local orderedUnits = iTF:CollectEngagedLayoutUnits()
+	for unitID, frame in pairs(iTF.frames) do
+		if not iTF:IsLayoutEligible(unitID) then
+			frame.layoutIndex = nil
+		end
+	end
+
+	for _, unitID in ipairs(orderedUnits) do
+		iTF:AssignStableLayoutSlot(unitID)
 	end
 end
 function indicatorFuncs:border(cond, unitID, color, hideCurrentCond, forceRefresh)
@@ -1310,13 +1357,14 @@ function iTF:getUFPos(id)
 	local x = 0
 	local y = 0
 	if VTFConfig.layout.invertGrow then
-		y = math.floor(id / VTFConfig.layout.colS) * (VTFConfig.layout.frame.height + VTFConfig.layout.frame.vspacing)
-		x = (r - 1) * (VTFConfig.layout.frame.width + VTFConfig.layout.frame.hspacing)
-	
-		if r == 0 then
-			y = (math.floor(id / VTFConfig.layout.colS) - 1) * (VTFConfig.layout.frame.height + VTFConfig.layout.frame.vspacing)
-			x = (VTFConfig.layout.colS - 1) * (VTFConfig.layout.frame.width + VTFConfig.layout.frame.hspacing)
-		end
+		local columns = math.max(VTFConfig.layout.colS, 1)
+		local rowsPerColumn = math.max(math.ceil(VTFConfig.layout.maxUnits / columns), 1)
+		local zeroBased = math.max(id - 1, 0)
+		local column = math.floor(zeroBased / rowsPerColumn)
+		local row = zeroBased % rowsPerColumn
+
+		x = column * (VTFConfig.layout.frame.width + VTFConfig.layout.frame.hspacing)
+		y = row * (VTFConfig.layout.frame.height + VTFConfig.layout.frame.vspacing)
 	else
 		x = math.floor(id / VTFConfig.layout.colS) * (VTFConfig.layout.frame.width + VTFConfig.layout.frame.hspacing)
 		y = (r - 1) * (VTFConfig.layout.frame.height + VTFConfig.layout.frame.vspacing)
@@ -1473,7 +1521,7 @@ function iTF:CreateNew(unitID, i)
 	iTF.frames[unitID].nameplateID = i
 	iTF.frames[unitID].engagedWithGroup = false
 	iTF.frames[unitID].suppressed = false
-	iTF.frames[unitID].visibleOrder = nil
+	iTF.frames[unitID].engagementOrder = nil
 	iTF.frames[unitID].layoutIndex = nil
 	
 	--Backdrop
@@ -1616,7 +1664,7 @@ function iTF:CreateNew(unitID, i)
 		iTF.frames[unitID].isShown = false
 		iTF.frames[unitID].engagedWithGroup = false
 		iTF.frames[unitID].suppressed = false
-		iTF.frames[unitID].visibleOrder = nil
+		iTF.frames[unitID].engagementOrder = nil
 		iTF.frames[unitID].layoutIndex = nil
 	end)
 	--RegisterUnitWatch(iTF.frames[unitID], true)
@@ -2071,49 +2119,70 @@ function iTF:updateMainFrameAttributes(newMax)
 	iTF.mainFrame:SetAttribute('_itfupdate', string.format([[
 		local frameKey
 		local frameRef
+		local slot
+
 		for j = 1, 60 do
 			frameKey = 'itf' .. j
-			if iTFCurrentlyAlive[frameKey] then
+			slot = iTFCurrentlyAlive[frameKey]
+			if slot and slot > %d then
 				iTFCurrentlyAlive[frameKey] = 0
-				frameRef = self:GetFrameRef(frameKey)
-				if frameRef then
-					frameRef:Hide()
+				if iTFCurrentlyShowing[slot] == frameKey then
+					iTFCurrentlyShowing[slot] = nil
 				end
 			end
-			iTFCurrentlyShowing[j] = nil
 		end
 
 		for i = 1, %d do
-			local f
-			local bestOrder
-			for j = 1, 60 do
-				local k = 'itf' .. j
-				if iTFCurrentlyAlive[k] == 0 and iTFAppearanceOrder[k] then
-					if not bestOrder or iTFAppearanceOrder[k] < bestOrder then
-						bestOrder = iTFAppearanceOrder[k]
-						f = k
-					end
-				end
-			end
-			if not f then
-				for j = 1, 60 do
-					local k = 'itf' .. j
-					if iTFCurrentlyAlive[k] == 0 then
-						f = k
-						break
-					end
-				end
-			end
-			if f then
-				iTFCurrentlyAlive[f] = i
-				iTFCurrentlyShowing[i] = f
-				f = self:GetFrameRef(f)
-				f:ClearAllPoints()
-				f:SetPoint('%s',self,'%s',iTFUnitPositions[i][1], iTFUnitPositions[i][2])
-				f:Show()
+			frameKey = iTFCurrentlyShowing[i]
+			if frameKey and iTFCurrentlyAlive[frameKey] ~= i then
+				iTFCurrentlyShowing[i] = nil
 			end
 		end
-	]], VTFConfig.layout.maxUnits,VTFConfig.layout.grow,VTFConfig.layout.grow))
+
+		for i = 1, %d do
+			if not iTFCurrentlyShowing[i] then
+				local bestKey
+				local bestOrder
+				for j = 1, 60 do
+					local k = 'itf' .. j
+					if iTFCurrentlyAlive[k] == 0 and iTFAppearanceOrder[k] then
+						if not bestOrder or iTFAppearanceOrder[k] < bestOrder then
+							bestOrder = iTFAppearanceOrder[k]
+							bestKey = k
+						end
+					end
+				end
+				if not bestKey then
+					for j = 1, 60 do
+						local k = 'itf' .. j
+						if iTFCurrentlyAlive[k] == 0 then
+							bestKey = k
+							break
+						end
+					end
+				end
+				if bestKey then
+					iTFCurrentlyAlive[bestKey] = i
+					iTFCurrentlyShowing[i] = bestKey
+				end
+			end
+		end
+
+		for j = 1, 60 do
+			frameKey = 'itf' .. j
+			frameRef = self:GetFrameRef(frameKey)
+			slot = iTFCurrentlyAlive[frameKey]
+			if frameRef then
+				if slot and slot > 0 and slot <= %d and iTFCurrentlyShowing[slot] == frameKey then
+					frameRef:ClearAllPoints()
+					frameRef:SetPoint('%s',self,'%s',iTFUnitPositions[slot][1], iTFUnitPositions[slot][2])
+					frameRef:Show()
+				else
+					frameRef:Hide()
+				end
+			end
+		end
+	]], VTFConfig.layout.maxUnits, VTFConfig.layout.maxUnits, VTFConfig.layout.maxUnits, VTFConfig.layout.maxUnits, VTFConfig.layout.grow, VTFConfig.layout.grow))
 	local tempTable = [[iTFUnitPositions = table.new();]]
 	for i = 1, 60 do
 		local x,y = iTF:getUFPos(i)
@@ -2122,15 +2191,6 @@ function iTF:updateMainFrameAttributes(newMax)
 	iTF.mainFrame:Execute(tempTable) -- Unitframe positions
 	if newMax then
 		iTF.mainFrame:Execute([[
-		local f
-		iTFCurrentlyShowing = table.new()
-		for i = 1, 60 do
-			f = self:GetFrameRef('itf'..i)
-			f:Hide()
-			if iTFCurrentlyAlive['itf'..i] then
-				iTFCurrentlyAlive['itf'..i] = 0
-			end
-		end
 		control:RunAttribute('_itfupdate')
 		]])
 	end			
@@ -2486,7 +2546,7 @@ function addon:NAME_PLATE_UNIT_REMOVED(unitID)
 		iTF.frames[unitID].isPlayer = nil
 		iTF.frames[unitID].engagedWithGroup = false
 		iTF.frames[unitID].suppressed = false
-		iTF.frames[unitID].visibleOrder = nil
+		iTF.frames[unitID].engagementOrder = nil
 		iTF.frames[unitID].layoutIndex = nil
 		iTF:ApplyPredictableLayout()
 	end

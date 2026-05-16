@@ -59,7 +59,7 @@ function layouts:Default()
 				['time'] = true, -- true = sort by time, false = sort by name
 				['ascending'] = false, -- true = Ascending, false = descending order
 			},
-			['durationFont'] = 'Fonts\\ARIALN.TTF', --duration text font
+			['durationFont'] = 'Interface\\AddOns\\ElvUI\\Media\\Fonts\\PTSansNarrow.ttf', --duration text font
 			['durationEnabled'] = true, -- Enable duration text
 			['durationSize'] = 13, --name/cast text size
 			['durationX'] = 0, --duration text horizontal position
@@ -67,7 +67,7 @@ function layouts:Default()
 			['durationPos'] = 'BOTTOM', --name/cast text anchor
 			['durationFlags'] = 'OUTLINE', --Font flags
 			['durationDecimals'] = 3, --Show 1 decimal at <X
-			['stackFont'] = 'Fonts\\ARIALN.TTF', --Stack text font
+			['stackFont'] = 'Interface\\AddOns\\ElvUI\\Media\\Fonts\\PTSansNarrow.ttf', --Stack text font
 			['stackEnabled'] = true, -- Enable stack text
 			['stackSize'] = 12, --name/cast text size
 			['stackX'] = 5, --duration text horizontal position
@@ -87,7 +87,7 @@ function layouts:Default()
 		['text'] = { -- Name/Cast text
 			['pos'] = 'TOPLEFT', --name/cast text anchor
 			['size'] = 12, --name/cast text size
-			['font'] = 'Fonts\\ARIALN.TTF', --name/cast text font
+			['font'] = 'Interface\\AddOns\\ElvUI\\Media\\Fonts\\PTSansNarrow.ttf', --name/cast text font
 			['x'] = 2, --name/cast text horizontal position
 			['y'] = -2, --name/cast text vertical position
 			['abbreviateNames'] = true, -- Shorten names to X. X. XXXX
@@ -97,7 +97,7 @@ function layouts:Default()
 			['enabled'] = true, -- Enable health text
 			['pos'] = 'RIGHT', --name/cast text anchor
 			['size'] = 11, --name/cast text size
-			['font'] = 'Fonts\\ARIALN.TTF', --name/cast text font
+			['font'] = 'Interface\\AddOns\\ElvUI\\Media\\Fonts\\PTSansNarrow.ttf', --name/cast text font
 			['x'] = 2, --name/cast text horizontal position
 			['y'] = 0, --name/cast text vertical position
 			['flags'] = 'OUTLINE', --Font flags
@@ -109,7 +109,7 @@ function layouts:Default()
 		},
 		['castBar'] = {
 			['texture'] = 'Interface\\Buttons\\WHITE8x8', --Cast bar texture
-			['enabled'] = false, -- Enable cast bar
+			['enabled'] = true, -- Enable cast bar
 			--['pos'] = 'TOP', -- Cast bar position ('TOP' or 'BOTTOM')
 			['detached'] = false, -- Detach cast bar from health bar
 			['detached_x'] = 0,
@@ -122,7 +122,7 @@ function layouts:Default()
 			['detached_text_x'] = 0,
 			['detached_text_y'] = 0,
 			['detached_text_size'] = 11,
-			['detached_text_font'] = 'Fonts\\ARIALN.TTF',
+			['detached_text_font'] = 'Interface\\AddOns\\ElvUI\\Media\\Fonts\\PTSansNarrow.ttf',
 			['detached_text_flags'] = 'OUTLINE',
 		},
 		['conditionals'] = {

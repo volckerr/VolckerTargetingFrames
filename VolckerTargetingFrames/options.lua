@@ -153,6 +153,10 @@ local function ensureUnlockPreview()
 		preview:SetBackdrop({bgFile = 'Interface\\Buttons\\WHITE8x8', edgeFile = 'Interface\\Buttons\\WHITE8x8', edgeSize = 1, insets = {left = 0, right = 0, top = 0, bottom = 0}})
 		preview:SetBackdropColor(0.75, 0.1, 0.1, 0.45)
 		preview:SetBackdropBorderColor(0.95, 0.95, 0.95, 0.75)
+		preview.slotText = preview:CreateFontString(nil, 'OVERLAY')
+		preview.slotText:SetFont(NumberFont_Shadow_Small:GetFont(), 16, 'OUTLINE')
+		preview.slotText:SetPoint('CENTER', preview, 'CENTER', 0, 0)
+		preview.slotText:SetTextColor(1, 1, 1, 0.95)
 		preview:Hide()
 		iTF.mainFrame.previewSlots[i] = preview
 	end
@@ -176,6 +180,7 @@ function iTF:RefreshUnlockPreview()
 				preview:SetSize(VTFConfig.layout.frame.width + 2, VTFConfig.layout.frame.height + 2)
 				preview:ClearAllPoints()
 				preview:SetPoint(VTFConfig.layout.grow, iTF.mainFrame, VTFConfig.layout.grow, posX, posY)
+				preview.slotText:SetText(i)
 				preview:Show()
 			else
 				preview:Hide()
